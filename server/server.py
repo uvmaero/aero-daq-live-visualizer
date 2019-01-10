@@ -13,7 +13,7 @@ PORT = 8000
 VEHICLE_NAME = "CleanSpeed 4.0"
 
 speed = 0
-soc = 0
+soc = 0.7
 throttle = 0
 current = 0
 cell_volt = [0 for i in range(0,80)]
@@ -25,7 +25,7 @@ class GetDataHandler(Resource):
         output_json = {
             'timestamp': int(time.time()*1000),  # timestamp in milliseconds
             'vehicle_name': VEHICLE_NAME,
-            'speed': speed;
+            'speed': speed,
             'soc': soc,
             'throttle': throttle,
             'current': current,
@@ -48,12 +48,21 @@ class CloseHandler(Resource):
         os.kill(pid, signal.SIGTERM)
 
 def loop():
-    global throttle, cell_volt, cell_temp
+    global throttle, cell_volt, cell_temp, current, soc
 
     # generate fake throttle data
     throttle += 0.01
     if throttle > 1:
         throttle = 0
+
+    # generate fake current data
+    current += 5
+    if current > 360:
+        current = 0
+
+    soc -= 0.0001
+    if soc < 0:
+        soc = 1
 
     # generate fake cell voltage and current data
     for i in range(0, 80):
