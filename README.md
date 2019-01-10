@@ -12,3 +12,20 @@ The program consists of a Python server using [Twisted](https://github.com/twist
 The Python server directly reads data from the car and presents a network endpoint that returns a single large JSON blob containing all the data when accessed via HTTP POST.
 
 The Javascript frontend uses AJAX to request data from the server on a regular interval. The JSON data is parsed and used to update all the graphs and gauges on the page.
+
+## Usage
+Note: This process will be streamlined in the future. Also, more dependencies will be added as the code is fleshed out.
+
+Currently, this has only been tested on Linux. Some differences may exist in the setup process for Windows or MacOS.
+
+1. Install the dependencies. This program requires Python 3.6+ as well as the Twisted networking library.
+
+To install Twisted, use:
+`pip install Twisted`
+
+2. Get the source code by either downloading the zip or using:
+`git clone https://github.com/uvmaero/aero-daq-live-visualizer`
+
+3. Run the program using run.sh. This will start the Twisted server and open your preferred browser with the GUI.
+
+4. To close the program cleanly, click the "Close" button on the Web GUI.
