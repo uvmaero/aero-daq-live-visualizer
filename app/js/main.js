@@ -101,6 +101,15 @@ function updateHandler() {
             // push the new throttle value to the throttle gauge
             throttleGauge.push(data["throttle"]);
 
+            // push the new current value to the current gauge
+            currentGauge.push(data["current"])
+
+            // push the new current value to the current gauge
+            speedGauge.push(data["speed"])
+
+            // push the new current value to the current gauge
+            socGauge.push(data["soc"])
+
             // get min, max, and average cell voltages
             cellVoltMax = arrayMax(data["cell_volt"]);
             cellVoltMin = arrayMin(data["cell_volt"]);
@@ -185,7 +194,7 @@ $(function() {
         type: 'time.gauge',
         value: 0,
         domain: [0, MAX_SPEED],  // speed ranges from 0 to 80mph
-        format: function(v) { return Math.round(v) + 'A'; },
+        format: function(v) { return Math.round(v) + 'mph'; },
         speed: REFRESH_RATE
     });
 
@@ -194,7 +203,7 @@ $(function() {
         type: 'time.gauge',
         value: 0,
         domain: [0, MAX_CURRENT],
-        format: function(v) { return Math.round(v) + 'mph'; },
+        format: function(v) { return Math.round(v) + 'A'; },
         speed: REFRESH_RATE
     });
 
