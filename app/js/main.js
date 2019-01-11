@@ -18,6 +18,9 @@ var updateTimer;
 // pause state
 var paused = false;
 
+// pause button element
+var pauseButton;
+
 // vehicle name (span in the header text)
 var vehicleName;
 
@@ -150,7 +153,7 @@ $(function() {
     vehicleName = $('#vehicleName');
 
     // set the click handler for the pause button
-    $('#pauseButton').click(function() {
+    pauseButton = $('#pauseButton').click(function() {
         if (!paused) {
             // if not paused, stop the update timer
             clearInterval(updateTimer);
