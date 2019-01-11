@@ -168,20 +168,6 @@ $(function() {
         }
     });
 
-    // set the click handler for the close button
-    $('#closeButton').click(function() {
-        // send a POST request to /close, which will trigger the
-        // server to shutdown
-        $.ajax({
-            url: "/close",
-            method: "POST",
-
-            // close the page on either success or error (most likely error)
-            success: result => { close(); },
-            error: result => { close(); }
-        });
-    });
-
     // initialize the throttle gauge
     throttleGauge = $('#throttleGauge').epoch({
         type: 'time.gauge',
