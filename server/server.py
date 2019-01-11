@@ -71,7 +71,7 @@ def loop():
     cell_temp[7] += 35
 
 # add the html frontend app
-root = File("../app")
+root = File("../dashboard")
 
 # add an endpoint for the get_data handler
 root.putChild(b"get_data", GetDataHandler())
