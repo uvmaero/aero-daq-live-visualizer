@@ -34,6 +34,13 @@ data_iterator = 0
 CELL_TEMP_STDEV = 5
 CELL_VOLT_STDEV = 0.05
 
+def kill_twistd():
+    # kill the server by pulling the pid from the pid file and sending it a SIGTERM
+    # this is janky, but whatever
+    with open("twistd.pid", "r") as f:
+        pid = int(f.readline())
+    os.kill(pid, signal.SIGTERM)
+
 class GetDataHandler(Resource):
     def render_POST(self, request):
         # create json blob
@@ -56,11 +63,7 @@ class GetDataHandler(Resource):
 
 class CloseHandler(Resource):
     def render_POST(self, resource):
-        # kill the server by pulling the pid from the pid file and sending it a SIGTERM
-        # this is janky, but whatever
-        with open("twistd.pid", "r") as f:
-            pid = int(f.readline())
-        os.kill(pid, signal.SIGTERM)
+        kill_twistd()
 
 def loop():
     global throttle, cell_volt, cell_temp, current, soc, speed, data, data_iterator
@@ -106,9 +109,10 @@ def loop():
 def app_thread():
     sys.excepthook = cef.ExceptHook
     cef.Initialize()
-    cef.CreateBrowserSync(url="http://localhost:8000/")
+    cef.CreateBrowserSync(url="http://localhost:8000/", window_title="AERO DAQ Live Visualizer")
     cef.MessageLoop()
     cef.Shutdown()
+    kill_twistd()   
 
 # add the html frontend app
 root = File("app")
@@ -134,5 +138,4 @@ with open('demo_data.csv', 'r') as f:
 lc = task.LoopingCall(loop)
 lc.start(0.1, now=False)
 
-thread = Thread(target = app_thread)
-thread.start()
+Thread(target = app_thread).start()
