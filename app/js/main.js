@@ -1,7 +1,8 @@
-// maximums for speed and current graphs
+// range for speed and current graphs
 // TODO: pull these from a config file
-var MAX_SPEED = 80;
+var MAX_SPEED = 90;
 var MAX_CURRENT = 360;
+var MIN_CURRENT = -100;
 
 // range for cell temps
 // TODO: pull these from a config file
@@ -10,7 +11,7 @@ var CELL_TEMP_MIN = 10;
 var CELL_TEMP_RANGE = CELL_TEMP_MAX - CELL_TEMP_MIN;
 
 // refresh rate, in hertz. The server will be polled this often
-var REFRESH_RATE = 1;
+var REFRESH_RATE = 10;
 
 // update timer for pulling data from the server
 var updateTimer;
@@ -30,6 +31,12 @@ var speedGauge;
 var currentGauge;
 var socGauge;
 var cellVoltChart;
+
+// Minimum and maximum cell voltage indicator elements
+var minCellNumberField;
+var minCellVoltageField;
+var maxCellNumberField;
+var maxCellVoltageField;
 
 // initial data for the cell voltage chart
 var cellVoltInitial = [
@@ -90,6 +97,7 @@ function arrayAvg(arr) {
  * request on /get_data with a json blob containing the newest data.
  */
 function updateHandler() {
+    if (paused) return;
     // construct an AJAX request to get_data
     $.ajax({
         url: "/get_data",
@@ -105,18 +113,30 @@ function updateHandler() {
             throttleGauge.push(data["throttle"]);
 
             // push the new current value to the current gauge
-            currentGauge.push(data["current"])
+            currentGauge.push(data["current"]);
 
             // push the new current value to the current gauge
-            speedGauge.push(data["speed"])
+            speedGauge.push(data["speed"]);
 
             // push the new current value to the current gauge
-            socGauge.push(data["soc"])
+            socGauge.push(data["soc"]);
 
+            current_ts = data["timestamp"];
+            
             // get min, max, and average cell voltages
             cellVoltMax = arrayMax(data["cell_volt"]);
             cellVoltMin = arrayMin(data["cell_volt"]);
             cellVoltAvg = arrayAvg(data["cell_volt"]);
+
+            minCellNumber = data["cell_volt"].findIndex((e) => {return e ==cellVoltMin});
+            maxCellNumber = data["cell_volt"].findIndex((e) => {return e == cellVoltMax});
+            
+            // update the minimum and maximum cell voltage indicators
+            minCellNumberField.text(minCellNumber);
+            minCellVoltageField.text(cellVoltMin);
+
+            maxCellNumberField.text(maxCellNumber);
+            maxCellVoltageField.text(cellVoltMax);
 
             // create the entry for the cell voltage chart
             var cellVoltEntry = [];
@@ -155,21 +175,23 @@ $(function() {
     // set the click handler for the pause button
     pauseButton = $('#pauseButton').click(function() {
         if (!paused) {
-            // if not paused, stop the update timer
-            clearInterval(updateTimer);
             paused = true;
 
             // change the text to "Run"
             pauseButton.text("Run");
         } else {
-            // if paused, set the update timer
-            updateTimer = setInterval(updateHandler, 100);
             paused = false;
 
             // change the text to "Pause"
             pauseButton.text("Pause");
         }
     });
+
+    // get the min/max cell voltage indicators
+    minCellVoltageField = $("#lowestCellVoltage");
+    minCellNumberField = $("#lowestCellNumber");
+    maxCellVoltageField = $("#highestCellVoltage");
+    maxCellNumberField = $("#highestCellNumber");
 
     // initialize the throttle gauge
     throttleGauge = $('#throttleGauge').epoch({
@@ -191,7 +213,7 @@ $(function() {
     currentGauge = $('#currentGauge').epoch({
         type: 'time.gauge',
         value: 0,
-        domain: [0, MAX_CURRENT],
+        domain: [MIN_CURRENT, MAX_CURRENT],
         format: function(v) { return Math.round(v) + 'A'; },
         speed: REFRESH_RATE
     });
@@ -207,7 +229,10 @@ $(function() {
     cellVoltChart = $('#cellVoltChart').epoch({
         type: 'time.line',
         data: cellVoltInitial,
-        axes: ['left', 'bottom']
+        axes: ['left', 'bottom'],
+        speed: REFRESH_RATE,
+        queueSize: 1,
+        windowSize: 100
     });
 
     // Setup update handler to run at a rate of REFRESH_RATE
