@@ -9,6 +9,15 @@ import random
 import os
 import signal
 
+import numpy as np
+
+import csv
+
+from cefpython3 import cefpython as cef
+import sys
+
+from threading import Thread
+
 PORT = 8000
 VEHICLE_NAME = "CleanSpeed 4.0"
 
@@ -18,6 +27,12 @@ throttle = 0
 current = 0
 cell_volt = [0 for i in range(0,80)]
 cell_temp = [0 for i in range(0,80)]
+
+data = []
+data_iterator = 0
+
+CELL_TEMP_STDEV = 5
+CELL_VOLT_STDEV = 0.05
 
 class GetDataHandler(Resource):
     def render_POST(self, request):
@@ -48,27 +63,52 @@ class CloseHandler(Resource):
         os.kill(pid, signal.SIGTERM)
 
 def loop():
-    global throttle, cell_volt, cell_temp, current, soc
+    global throttle, cell_volt, cell_temp, current, soc, speed, data, data_iterator
 
-    # generate fake throttle data
-    throttle += 0.01
-    if throttle > 1:
-        throttle = 0
+    throttle = float(data[data_iterator][1])
+    speed = float(data[data_iterator][2])
+    current = float(data[data_iterator][3])
+    soc = float(data[data_iterator][5])
 
-    # generate fake current data
-    current += 5
-    if current > 360:
-        current = 0
-
-    soc -= 0.0001
-    if soc < 0:
-        soc = 1
-
-    # generate fake cell voltage and current data
     for i in range(0, 80):
-        cell_volt[i] = random.randrange(3500, 3700)/1000
-        cell_temp[i] = random.randrange(220, 250)/10
-    cell_temp[7] += 35
+        cell_temp[i] = np.random.normal(float(data[data_iterator][6]), CELL_TEMP_STDEV)
+
+    for i in range(0, 80):
+        cell_volt[i] = np.random.normal(float(data[data_iterator][7]), CELL_VOLT_STDEV)
+
+    data_iterator += 1
+
+    if (data_iterator == len(data)):
+        data_iterator = 0
+
+
+    # # generate fake throttle data
+    # throttle += 0.01
+    # if throttle > 1:
+    #     throttle = 0
+
+    # # generate fake current data
+    # current += 5
+    # if current > 360:
+    #     current = 0
+
+    # soc -= 0.0001
+    # if soc < 0:
+    #     soc = 1
+
+    # # generate fake cell voltage and current data
+    # for i in range(0, 80):
+    #     cell_volt[i] = random.randrange(3500, 3700)/1000
+    #     cell_temp[i] = random.randrange(220, 250)/10
+    # cell_temp[7] += 35
+
+# desktop app thread
+def app_thread():
+    sys.excepthook = cef.ExceptHook
+    cef.Initialize()
+    cef.CreateBrowserSync(url="http://localhost:8000/")
+    cef.MessageLoop()
+    cef.Shutdown()
 
 # add the html frontend app
 root = File("../app")
@@ -83,6 +123,16 @@ root.putChild(b"close", CloseHandler())
 application = Application("AERO Data Visualizer")
 server = TCPServer(PORT, Site(root)).setServiceParent(application)
 
+# load CSV data
+with open('demo_data.csv', 'r') as f:
+    reader = csv.reader(f)
+    next(reader)
+
+    data = [r for r in reader]
+
 # start looping task
 lc = task.LoopingCall(loop)
 lc.start(0.1, now=False)
+
+thread = Thread(target = app_thread)
+thread.start()
