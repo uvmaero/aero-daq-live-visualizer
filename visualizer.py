@@ -18,8 +18,10 @@ import sys
 
 from threading import Thread
 
+import configparser
+
 PORT = 8000
-VEHICLE_NAME = "CleanSpeed 4.0"
+VEHICLE_NAME = ""
 
 speed = 0
 soc = 0.7
@@ -109,10 +111,21 @@ def loop():
 def app_thread():
     sys.excepthook = cef.ExceptHook
     cef.Initialize()
-    cef.CreateBrowserSync(url="http://localhost:8000/", window_title="AERO DAQ Live Visualizer")
+    cef.CreateBrowserSync(url="http://localhost:"+PORT, window_title="AERO DAQ Live Visualizer")
     cef.MessageLoop()
     cef.Shutdown()
     kill_twistd()   
+
+def parse_config():
+    global PORT, VEHICLE_NAME
+    config = configparser.ConfigParser()
+    config.read('visualizer_config.ini')
+
+    if 'WEBSERVER' in config.sections():
+        PORT = config['WEBSERVER']['port']
+
+    if 'VEHICLE' in config.sections():
+        VEHICLE_NAME = config['VEHICLE']['name']
 
 # add the html frontend app
 root = File("app")
@@ -133,6 +146,8 @@ with open('demo_data.csv', 'r') as f:
     next(reader)
 
     data = [r for r in reader]
+
+parse_config()
 
 # start looping task
 lc = task.LoopingCall(loop)
