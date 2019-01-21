@@ -2684,7 +2684,7 @@ Epoch.Time.Plot = (function(superClass) {
     this.trigger('transition:start');
     this._shift();
     this.animation.active = true;
-    return this.animation.interval = setInterval(this.animationCallback, 1000 / this.options.fps);
+    return this.animation.interval = setInterval(this.animationCallback, (1000 / this.options.speed) / this.options.fps);
   };
 
   Plot.prototype._stopTransition = function() {
