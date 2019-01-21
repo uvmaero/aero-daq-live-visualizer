@@ -1,3 +1,3 @@
 #!/bin/sh
 
-electron main.js
+twistd -y visualizer.py -n
