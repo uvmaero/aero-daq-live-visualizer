@@ -6,6 +6,8 @@ AERO DAQ is a University of Vermont Engineering Capstone Project (SEED) team for
 ## Purpose
 This program serves as the live frontend to the AERO DAQ project. It displays select data that is remotely transmitted from the car to a set of gauges and graphs. It allows for team members in the pit to view the current status of the car so they can inform the driver of any changes that need to be made to their driving style.
 
+![Current screenshot of data visualizer program](screenshot.png)
+
 ## Structure
 The program consists of a Python server using [Twisted](https://github.com/twisted/twisted) and a frontend/web GUI written in Javascript/HTML that utilizes the [Epoch](https://github.com/epochjs/epoch) live graphing library to generate the gauges and graphs.
 
