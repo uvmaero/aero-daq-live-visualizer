@@ -111,7 +111,7 @@ def app_thread():
     cef.Shutdown()
 
 # add the html frontend app
-root = File("../app")
+root = File("app")
 
 # add an endpoint for the get_data handler
 root.putChild(b"get_data", GetDataHandler())
