@@ -83,7 +83,7 @@ def app_thread():
 
 def serial_thread():
     global throttle, cell_volt, cell_temp, current, soc, speed
-    with serial.Serial("/dev/pts/2", 115200) as ser:
+    with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as ser:
         while not kill_thread:
             data = ser.readline().decode()
             if data != '':
