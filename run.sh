@@ -2,7 +2,7 @@
 
 # if the virtual environment doesn't exist, create it
 if [ ! -e ".venv" ]; then
-    python3 -m venv .venv
+    pyvenv .venv
 fi
 
 # activate the virtual environment
