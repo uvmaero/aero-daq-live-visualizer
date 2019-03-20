@@ -1,3 +1,4 @@
 cefpython3==66.0
 Twisted==18.9.0
 numpy==1.16.0
+pyserial==3.4
