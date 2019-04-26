@@ -24,6 +24,7 @@ import numpy as np
 from cefpython3 import cefpython as cef
 import sys
 from multiprocessing import Process
+from threading import Thread
 import signal
 import configparser
 import serial
@@ -87,7 +88,7 @@ class Visualizer:
         self.app = dash.Dash(__name__)
         self.app.layout = html.Div([
             html.Div([
-                html.H1(f'Live Telemetry Data – {VEHICLE_NAME}', style={'display': 'inline-block'})
+               html.H1(f'Live Telemetry Data – {VEHICLE_NAME}', style={'display': 'inline-block'})
             ]),
 
             daq.DarkThemeProvider(theme=self.theme, children=[
@@ -156,7 +157,7 @@ class Visualizer:
                             label='IMD Fault',
                             color="#ff0000",
                             size=30,
-                            value=True,
+                            value=False,
                             style={'margin-bottom': 20}
                         ),
 
@@ -236,179 +237,164 @@ class Visualizer:
                 ])
             ]),
 
-            daq.Gauge(
-                id = 'pitch-gauge',
-                label = 'Pitch',
-                min = -0.0175,
-                max = 0.0175,
-                value = 20,
-                showCurrentValue = True,
-                units = 'radians',
-                color = '#00EA64'
+            dcc.Interval(
+                id='fast-interval',
+                interval=100, # in milliseconds
+                n_intervals=0
             ),
 
-            # dcc.Interval(
-            #     id='fast-interval',
-            #     interval=100, # in milliseconds
-            #     n_intervals=0
-            # ),
-
-            # dcc.Interval(
-            #     id='slow-interval',
-            #     interval=500, # in milliseconds
-            #     n_intervals=0
-            # )
+            dcc.Interval(
+                id='slow-interval',
+                interval=500, # in milliseconds
+                n_intervals=0
+            )
         ], style={'background': '#303030', 'color': 'white'})
 
-        # # Update all fast data
-        # @self.app.callback(
-        #     [Output('speed-gauge', 'value'), Output('throttle-gauge', 'value'), Output('current-gauge', 'value'), Output('pitch-gauge', 'value')],
-        #     [Input('fast-interval', 'n_intervals')]
-        # )
-        # def update_fast_values(n):
-        #     print(self.current)
-        #     return self.speed, self.throttle, self.current, self.pitch
+        # Update all fast data
+        @self.app.callback(
+            [Output('speed-gauge', 'value'), Output('throttle-gauge', 'value'), Output('current-gauge', 'value')],
+            [Input('fast-interval', 'n_intervals')]
+        )
+        def update_fast_values(n):
+            print(self.speed)
+            return self.speed, self.throttle, self.current
 
-        # # Update all slow data
-        # @self.app.callback(
-        #     [
-        #         Output('soc-gauge', 'value'),
-        #         Output('controller-temp', 'value'), Output('controller-temp', 'color'),
-        #         Output('motor-temp', 'value'), Output('motor-temp', 'color'),
-        #         Output('battery-temp', 'value'), Output('battery-temp', 'color'),
-        #     ],
-        #     [
-        #         Input('slow-interval', 'n_intervals')
-        #     ]
-        # )
-        # def update_slow_values(n):
-        #     battery_temp = np.max(self.cell_temp)
+        # Update all slow data
+        @self.app.callback(
+            [
+                Output('soc-gauge', 'value'),
+                Output('controller-temp', 'value'), Output('controller-temp', 'color'),
+                Output('motor-temp', 'value'), Output('motor-temp', 'color'),
+                Output('battery-temp', 'value'), Output('battery-temp', 'color'),
+            ],
+            [
+                Input('slow-interval', 'n_intervals')
+            ]
+        )
+        def update_slow_values(n):
+            battery_temp = np.max(self.cell_temp)
 
-        #     # Determine the color for the controller thermometer
-        #     if self.controller_temp > CONTROLLER_TEMP_HIGH:
-        #         controller_temp_color = '#ff0000'
-        #     elif self.controller_temp > CONTROLLER_TEMP_LOW:
-        #         controller_temp_color = '#ffff00'
-        #     else:
-        #         controller_temp_color = '#00EA64'
+            # Determine the color for the controller thermometer
+            if self.controller_temp > CONTROLLER_TEMP_HIGH:
+                controller_temp_color = '#ff0000'
+            elif self.controller_temp > CONTROLLER_TEMP_LOW:
+                controller_temp_color = '#ffff00'
+            else:
+                controller_temp_color = '#00EA64'
 
-        #     # Determine the color for the controller thermometer
-        #     if self.motor_temp > MOTOR_TEMP_HIGH:
-        #         motor_temp_color = '#ff0000'
-        #     elif self.motor_temp > MOTOR_TEMP_LOW:
-        #         motor_temp_color = '#ffff00'
-        #     else:
-        #         motor_temp_color = '#00EA64'
+            # Determine the color for the controller thermometer
+            if self.motor_temp > MOTOR_TEMP_HIGH:
+                motor_temp_color = '#ff0000'
+            elif self.motor_temp > MOTOR_TEMP_LOW:
+                motor_temp_color = '#ffff00'
+            else:
+                motor_temp_color = '#00EA64'
 
-        #     # Determine the color for the controller thermometer
-        #     if battery_temp > BATTERY_TEMP_HIGH:
-        #         battery_temp_color = '#ff0000'
-        #     elif battery_temp > BATTERY_TEMP_LOW:
-        #         battery_temp_color = '#ffff00'
-        #     else:
-        #         battery_temp_color = '#00EA64'
+            # Determine the color for the controller thermometer
+            if battery_temp > BATTERY_TEMP_HIGH:
+                battery_temp_color = '#ff0000'
+            elif battery_temp > BATTERY_TEMP_LOW:
+                battery_temp_color = '#ffff00'
+            else:
+                battery_temp_color = '#00EA64'
             
-        #     return self.soc, self.controller_temp, controller_temp_color, self.motor_temp, motor_temp_color, battery_temp, battery_temp_color
+            return self.soc, self.controller_temp, controller_temp_color, self.motor_temp, motor_temp_color, battery_temp, battery_temp_color
 
-        # # Update the cell table
-        # @self.app.callback(Output('cell-graph', 'figure'), [Input('slow-interval', 'n_intervals'), Input('val-switcher', 'value')])
-        # def update_cell_graph( n, val):
-        #     cell_number = [i for i in range(NUM_CELLS)]
-        #     if val:
-        #         cell_data = self.cell_volt
-        #         title = 'Cell Voltages'
-        #     else:
-        #         cell_data = self.cell_temp
-        #         title = 'Cell Temperatures'
+        # Update the cell table
+        @self.app.callback(Output('cell-graph', 'figure'), [Input('slow-interval', 'n_intervals'), Input('val-switcher', 'value')])
+        def update_cell_graph( n, val):
+            cell_number = [i for i in range(NUM_CELLS)]
+            if val:
+                cell_data = self.cell_volt
+                title = 'Cell Voltages'
+            else:
+                cell_data = self.cell_temp
+                title = 'Cell Temperatures'
 
-        #     fig = {
-        #         'data': [
-        #             {'x': cell_number, 'y': cell_data, 'type': 'bar', 'name': 'Cell Temp'}
-        #         ],
-        #         'layout': {
-        #             'title': title,
-        #             'titlefont': {
-        #                 'color': 'white'
-        #             },
-        #             'paper_bgcolor': '#303030',
-        #             'plot_bgcolor': '#303030',
-        #             'legend': {
-        #                 'font': {
-        #                     'color': 'white'
-        #                 }
-        #             },
-        #             'xaxis': {
-        #                 'linecolor': 'white',
-        #                 'gridcolor': '#505050',
-        #                 'titlefont': {
-        #                     'color': 'white'
-        #                 },
-        #                 'tickfont': {
-        #                     'color': 'white'
-        #                 }
-        #             },
-        #             'yaxis': {
-        #                 'linecolor': 'white',
-        #                 'gridcolor': '#505050',
-        #                 'titlefont': {
-        #                     'color': 'white'
-        #                 },
-        #                 'tickfont': {
-        #                     'color': 'white'
-        #                 }
-        #             },
-        #             'width': 800,
-        #             'height': 350,
-        #             'margin': {
-        #                 'l': 20,
-        #                 'r': 20,
-        #                 'b': 40,
-        #                 't': 30,
-        #                 'pad': 0
-        #             }
-        #         }
-        #     }
+            fig = {
+                'data': [
+                    {'x': cell_number, 'y': cell_data, 'type': 'bar', 'name': 'Cell Temp'}
+                ],
+                'layout': {
+                    'title': title,
+                    'titlefont': {
+                        'color': 'white'
+                    },
+                    'paper_bgcolor': '#303030',
+                    'plot_bgcolor': '#303030',
+                    'legend': {
+                        'font': {
+                            'color': 'white'
+                        }
+                    },
+                    'xaxis': {
+                        'linecolor': 'white',
+                        'gridcolor': '#505050',
+                        'titlefont': {
+                            'color': 'white'
+                        },
+                        'tickfont': {
+                            'color': 'white'
+                        }
+                    },
+                    'yaxis': {
+                        'linecolor': 'white',
+                        'gridcolor': '#505050',
+                        'titlefont': {
+                            'color': 'white'
+                        },
+                        'tickfont': {
+                            'color': 'white'
+                        }
+                    },
+                    'width': 800,
+                    'height': 350,
+                    'margin': {
+                        'l': 20,
+                        'r': 20,
+                        'b': 40,
+                        't': 30,
+                        'pad': 0
+                    }
+                }
+            }
             
-        #     return fig
+            return fig
 
     def start(self):
         # create a thread for the GUI app
         #Thread(target = app_thread).start()
         try:
-            # create a thread for the serial monitor
-            app_thread = Process(target = self.dash_app)
+            # create a separate process for the web app
+            app_thread = Thread(target = self.dash_app)
             app_thread.start()
 
-            self.app.run_server(port=8000, debug=False)
-
-            # try:
-            #     with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as ser:
-            #         data = ser.readline().decode()
-            #         if data != '':
-            #             fields = data.split(' ')
-            #             if fields[0] == 'RX':
-            #                 print('got new data')
-            #                 print(fields)
-            #                 if fields[1] == 'throttle':
-            #                     self.throttle = float(fields[2])
-            #                 elif fields[1] == 'cell_temp':
-            #                     self.cell_temp[int(fields[2])] = float(fields[3])
-            #                 elif fields[1] == 'cell_volt':
-            #                     self.cell_volt[int(fields[2])] = float(fields[3])
-            #                 elif fields[1] == 'current':
-            #                     self.current = float(fields[2])
-            #                     print(f'setting current to {self.current}')
-            #                 elif fields[1] == 'soc':
-            #                     self.soc = float(fields[2])
-            #                 elif fields[1] == 'speed':
-            #                     self.speed = float(fields[2])
-            #                 elif fields[1] == 'pitch':
-            #                     self.pitch = float(fields[2])
-            #                     print(f'setting pitch to {self.pitch}')
-            # except serial.serialutil.SerialException:
-            #     print("No serial device found")
-            #     app_thread.terminate()
-            #     exit()
+            try:
+                with serial.Serial(SERIAL_PORT, SERIAL_BAUD_RATE) as ser:
+                    while True:
+                        data = ser.readline().decode()
+                        if data != '':
+                            fields = data.split(' ')
+                            if fields[0] == 'RX':
+                                print('got data')
+                                print(fields)
+                                if fields[1] == 'throttle':
+                                    self.throttle = float(fields[2])
+                                elif fields[1] == 'cell_temp':
+                                    self.cell_temp[int(fields[2])] = float(fields[3])
+                                elif fields[1] == 'cell_volt':
+                                    self.cell_volt[int(fields[2])] = float(fields[3])
+                                elif fields[1] == 'current':
+                                    self.current = float(fields[2])
+                                elif fields[1] == 'soc':
+                                    self.soc = float(fields[2])
+                                elif fields[1] == 'speed':
+                                    self.speed = float(fields[2])
+                                    print(f'got new speed {self.speed}')
+            except serial.serialutil.SerialException:
+                print("No serial device found")
+                app_thread.join()
+                exit()
 
 
         except KeyboardInterrupt:
@@ -430,7 +416,7 @@ class Visualizer:
             SERIAL_BAUD_RATE = config['SERIAL']['baud_rate']
 
     def dash_app(self):
-        pass
+        self.app.run_server(port=8000, debug=False)
         
 
 if __name__ == "__main__":
