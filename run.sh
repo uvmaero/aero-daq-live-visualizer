@@ -9,7 +9,7 @@ fi
 source .venv/bin/activate
 
 # install dependencies
-pip install -r requirements.txt
+pip3.6 install -r requirements.txt
 
-# run the Twisted app
-twistd -y visualizer.py -n
+# run the program app
+python3.6 visualizer.py
